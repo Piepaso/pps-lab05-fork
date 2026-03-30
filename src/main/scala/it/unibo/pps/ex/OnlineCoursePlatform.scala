@@ -12,7 +12,14 @@ trait Course:
 
 object Course:
   // Factory method for creating Course instances
-  def apply(courseId: String, title: String, instructor: String, category: String): Course = ???
+  def apply(courseId: String, title: String, instructor: String, category: String): Course =
+    CourseImpl(courseId, title, instructor, category)
+
+  private case class CourseImpl(courseId: String, title: String, instructor: String, category: String) extends Course:
+      override def equals(obj: Any): Boolean = obj match
+        case CourseImpl(id,_,_,_) if id == courseId => true
+        case _ => false
+
 /**
  * Manages courses and student enrollments on an online learning platform.
  */
@@ -86,7 +93,38 @@ end OnlineCoursePlatform
 
 object OnlineCoursePlatform:
   // Factory method for creating an empty platform instance
-  def apply(): OnlineCoursePlatform = ??? // Fill Here!
+  def apply(): OnlineCoursePlatform = new OnlineCoursePlatformImpl()
+
+  private class OnlineCoursePlatformImpl() extends OnlineCoursePlatform:
+    import Sequence.*
+    private var courses: Sequence[Course] = Nil()
+    private var students: Sequence[(String, String)] = Nil()
+
+    override def addCourse(course: Course): Unit =
+      if courses.contains(course) then () else courses = Cons(course, courses)
+
+    override def findCoursesByCategory(category: String): Sequence[Course] = courses.filter(c => c.category == category)
+
+    override def getCourse(courseId: String): Optional[Course] =
+      courses.filter(c => c.courseId == courseId) match
+      case Cons(h, _) => Optional.Just(h)
+      case _ => Optional.Empty()
+
+    override def removeCourse(course: Course): Unit = courses = courses.filter(c => c != course)
+
+    override def isCourseAvailable(courseId: String): Boolean = courses.contains(Course(courseId, "", "", ""))
+
+    override def enrollStudent(studentId: String, courseId: String): Unit = students = Cons((studentId, courseId), students)
+
+    override def unenrollStudent(studentId: String, courseId: String): Unit =
+      students = students.filter(s => s != (studentId, courseId))
+
+    override def getStudentEnrollments(studentId: String): Sequence[Course] =
+      students.filter(s => s._1 == studentId).flatMap(id => courses.filter(c => c.courseId == id._2))
+
+    override def isStudentEnrolled(studentId: String, courseId: String): Boolean = students.contains((studentId, courseId))
+
+
 
 /**
  * Represents an online learning platform that offers courses and manages student enrollments.
