@@ -44,6 +44,18 @@ object Streams:
         case (Stream.Cons(head, tail), n) if n > 0 => Stream.cons(head(), tail().take(n - 1))
         case _ => Stream.Empty()
 
+      def reduce[B](base: B, f: (B, A) => B): B = stream match
+        case Cons(h, t) => t().reduce(f(base, h()), f)
+        case _ => base
+
+      def distinct(): Stream[A] =
+        def _distinct(s: Stream[A], seen: Sequence[A]): Stream[A] = s match
+          case Cons(h, t) if seen.contains(h()) => _distinct(t(), seen)
+          case Cons(h, t) => cons(h(), _distinct(t(), Sequence.Cons(h(), seen)))
+          case _ => empty()
+          
+        _distinct(stream, Sequence.Nil())
+
   end Stream
 
 @main def tryStreams =
